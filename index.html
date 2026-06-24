@@ -95,13 +95,17 @@
       clear: both;
     }
 
-    #left {
+    .center {
+      text-align: center;
+    }
+
+    .left {
       float: left;
       padding-top: 20px;
       width: 200px;
     }
 
-    #left a.h2 {
+    .left a.h2 {
       text-transform: uppercase;
       font-size: 2em;
       /* line-height: 1em; */
@@ -109,18 +113,18 @@
       text-decoration: none;
     }
 
-    #left a.h2:hover {
+    .left a.h2:hover {
       color: #111111;
       background: none;
       text-decoration: none;
     }
 
-    #left .space {
+    .left.space {
       width: 100%;
       height: 20px;
     }
 
-    #left .space.small {
+    .left.space.small {
       width: 100%;
       height: 10px;
     }
@@ -179,6 +183,56 @@
       color: #111111;
       background: none;
     }
+
+    .name {
+      display: flex;
+      gap: 6px;
+      align-items: flex-start;
+    }
+
+    .syllable {
+      position: relative;
+      width: 60px;
+      height: 65px;
+      flex-shrink: 0;
+    }
+
+    .syllable img {
+      position: absolute;
+      display: block;
+    }
+
+    .syllable.cvc > .initial {
+      top: 0;
+      left: 0;
+      width: 42px;
+      height: 38px;
+    }
+    .syllable.cvc > .vowel {
+      top: 0;
+      right: 0;
+      width: 14px;
+      height: 38px;
+    }
+    .syllable.cvc > .final {
+      bottom: 0;
+      left: 0;
+      width: 60px;
+      height: 22px;
+    }
+
+    .syllable.cv > .initial {
+      top: 0;
+      left: 0;
+      width: 42px;
+      height: 65px;
+    }
+    .syllable.cv > .vowel {
+      top: 0;
+      right: 0;
+      width: 14px;
+      height: 65px;
+    }
   </style>
 
   <!-- todo- rss -->
@@ -186,43 +240,65 @@
   <meta name="viewport" content="width=820" />
 
   <body>
-    <div id="left">
-      <img
-        id="letter-ㄱ"
-        class="vinyl-art"
-        src="letters/ㄱ-01.svg"
-        alt="ㄱ"
-        draggable="false"
-      />
+    <!-- <div id="left">
+      <div class="name" aria-label="김지민">
+        <div class="syllable cvc">
+          <img data-letter="ㄱ" class="initial" src="letters/ㄱ-01.svg" alt="" draggable="false" />
+          <img data-letter="ㅣ" class="vowel" src="letters/ㅣ-01.svg" alt="" draggable="false" />
+          <img data-letter="ㅁ" class="final" src="letters/ㅁ-01.svg" alt="" draggable="false" />
+        </div>
+        <div class="syllable cv">
+          <img data-letter="ㅈ" class="initial" src="letters/ㅈ-01.svg" alt="" draggable="false" />
+          <img data-letter="ㅣ" class="vowel" src="letters/ㅣ-01.svg" alt="" draggable="false" />
+        </div>
+        <div class="syllable cvc">
+          <img data-letter="ㅁ" class="initial" src="letters/ㅁ-01.svg" alt="" draggable="false" />
+          <img data-letter="ㅣ" class="vowel" src="letters/ㅣ-01.svg" alt="" draggable="false" />
+          <img data-letter="ㄴ" class="final" src="letters/ㄴ-01.svg" alt="" draggable="false" />
+        </div>
+      </div>
     </div>
     <script>
       ;(() => {
-        const img = document.getElementById("letter-ㄱ")
         const frameCount = 10
         const frameDurationMs = 150
+        const preloaded = new Set()
 
-        const frames = Array.from({ length: frameCount }, (_, i) => {
-          const padded = String(i + 1).padStart(2, "0")
-          return `letters/ㄱ-${padded}.svg`
+        const animateLetter = (letter, img, startFrame = 0) => {
+          const frames = Array.from({ length: frameCount }, (_, i) => {
+            const padded = String(i + 1).padStart(2, "0")
+            return `letters/${letter}-${padded}.svg`
+          })
+
+          if (!preloaded.has(letter)) {
+            frames.forEach((src) => {
+              const pre = new Image()
+              pre.src = src
+            })
+            preloaded.add(letter)
+          }
+
+          let frame = startFrame
+          setInterval(() => {
+            frame = (frame + 1) % frameCount
+            img.src = frames[frame]
+          }, frameDurationMs)
+        }
+
+        document.querySelectorAll("img[data-letter]").forEach((img, i) => {
+          animateLetter(img.dataset.letter, img, i % frameCount)
         })
-
-        // Preload so swaps don't flash
-        frames.forEach((src) => {
-          const pre = new Image()
-          pre.src = src
-        })
-
-        let frame = 0
-        setInterval(() => {
-          frame = (frame + 1) % frameCount
-          img.src = frames[frame]
-        }, frameDurationMs)
       })()
-    </script>
+    </script> -->
 
-    <div id="right">
-      <h1>Jasmine 지민</h1>
-
+    <div class="center">
+      <h1>
+        Jasmine
+        <img src="letters/지민2.svg" width="100px" />
+        Kim
+      </h1>
+    </div>
+    <div class="left">
       <!-- <h3><a href="/bookshelf">eooo</a></h3> -->
 
       <!-- link to posts -->
