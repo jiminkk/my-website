@@ -36,8 +36,7 @@
       margin: 0;
       padding: 20px;
       background: #ffffff;
-      /* font-family: Georgia, Palatino, 'Palatino Linotype', Times, 'Times New Roman', serif; */
-      font-family: "Noto Sans JP", sans-serif;
+      font-family: "Helvetica";
       font-optical-sizing: auto;
 
       font-size: 0.75em;
@@ -45,8 +44,7 @@
     }
 
     h1 {
-      font-family:
-        Georgia, Palatino, "Palatino Linotype", Times, "Times New Roman", serif;
+      font-family: "Helvetica";
       font-weight: 500;
       font-size: 26px;
     }
@@ -77,13 +75,15 @@
     }
 
     .container {
-      text-align: center;
-      width: 770px;
+      float: left;
+      text-align: left;
+      width: 550px;
       margin: 0 auto;
+      padding: 25px 0 0 100px;
     }
 
     .off-center {
-      padding: 100px 0 0 100px;
+      /* padding: 100px 0 0 100px; */
       text-align: left;
       display: flex;
     }
@@ -97,11 +97,19 @@
       font-size: small;
     }
     .projects {
-      text-align: left;
       width: 400px;
     }
     .float-right {
       float: right;
+    }
+    .blog {
+      width: 300px;
+      margin: 50px 40px 0 0;
+    }
+    ul {
+      padding-left: 0;
+      margin-left: 0;
+      list-style-type: none;
     }
   </style>
 
@@ -112,31 +120,32 @@
   <body>
     <div class="container">
       <div class="off-center">
-        <h1>Jasmine</h1>
-        <div class="name">
-          <img src="letters/지민2.svg" width="61px" />
-        </div>
-        <h1>Kim</h1>
+        <h1>Jasmine 지민 Kim</h1>
       </div>
 
-      <div class="about">
-        software and product engineer
-        <br />
-        <br />
-      </div>
+      <div class="about">software and product engineer</div>
 
       <div class="projects">
-        <p>fun projects</p>
+        <p>projects</p>
         <div>
           <a href="https://jiminkk.github.io/radio-player">tune in.</a>
         </div>
         <div>
-          <a href="https://lifepo.st">lifepo.st</a>
+          <a href="https://lifepo.st/jsmnk.bsky.social">lifepo.st</a>
         </div>
       </div>
+      <div class="blog">
+        <ul>
+          <li>
+            <a>resume</a>
+            <span class="float-right">coming soon</span>
+          </li>
+          <li>
+            <a>on lifepo.st</a>
+            <span class="float-right">coming soon</span>
+          </li>
+        </ul>
+      </div>
     </div>
-    <!-- <div class="left">
-      <h3><a href="post.html">first post</a></h3>
-    </div> -->
   </body>
 </html>
