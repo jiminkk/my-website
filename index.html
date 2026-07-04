@@ -42,73 +42,71 @@
       font-size: 0.75em;
       color: #111111;
     }
-
     h1 {
       font-family: "Helvetica";
       font-weight: 500;
       font-size: 26px;
     }
-
-    .name {
+    h1.name {
       padding: 1px;
+      margin-bottom: 7px;
+      font-style: italic;
     }
-
     a {
       color: #111111;
       font-weight: 700;
       text-decoration: none;
     }
-
     a:hover {
       color: #ffffff;
       background: #ff1e00;
       text-decoration: underline;
     }
-
     a:active,
     a:focus {
       outline: 0;
     }
-
     a img {
       border-width: 0px;
     }
-
     .container {
       float: left;
       text-align: left;
-      width: 550px;
       margin: 0 auto;
-      padding: 25px 0 0 100px;
+      padding: 25px 0 0 71px;
     }
-
+    .box {
+      border: black 1px solid;
+      padding: 0 0 10px 20px;
+      width: 365px;
+    }
     .off-center {
       /* padding: 100px 0 0 100px; */
       text-align: left;
       display: flex;
     }
-
-    .name {
-      height: 100%;
-      padding: 12px 10px 12px 8px;
-    }
-
     .about {
       font-size: small;
     }
     .projects {
+      margin-top: 40px;
       width: 400px;
+    }
+    .subheader {
+      width: fit-content;
+      font-style: italic;
+      margin-bottom: 10px;
     }
     .float-right {
       float: right;
     }
     .blog {
-      width: 300px;
-      margin: 50px 40px 0 0;
+      margin: 40px 20px 0 0;
     }
     ul {
       padding-left: 0;
       margin-left: 0;
+      margin-top: 7px;
       list-style-type: none;
     }
   </style>
@@ -119,32 +117,41 @@
 
   <body>
     <div class="container">
-      <div class="off-center">
-        <h1>Jasmine 지민 Kim</h1>
-      </div>
-
-      <div class="about">software and product engineer</div>
-
-      <div class="projects">
-        <p>projects</p>
-        <div>
-          <a href="https://jiminkk.github.io/radio-player">tune in.</a>
+      <div class="box">
+        <div class="off-center">
+          <h1 class="name">Jasmine 지민 Kim</h1>
         </div>
-        <div>
-          <a href="https://lifepo.st/jsmnk.bsky.social">lifepo.st</a>
+
+        <div class="about">software and product engineer</div>
+
+        <div class="projects">
+          <p class="subheader">
+            -----------------&nbsp;&nbsp;projects
+            &nbsp;&nbsp;------------------------------------------------------
+          </p>
+          <div>
+            <a href="https://jiminkk.github.io/radio-player">tune in.</a>
+          </div>
+          <div>
+            <a href="https://lifepo.st/jsmnk.bsky.social">lifepo.st</a>
+          </div>
         </div>
-      </div>
-      <div class="blog">
-        <ul>
-          <li>
-            <a>resume</a>
-            <span class="float-right">coming soon</span>
-          </li>
-          <li>
-            <a>on lifepo.st</a>
-            <span class="float-right">coming soon</span>
-          </li>
-        </ul>
+        <div class="blog">
+          <p class="subheader">
+            ----------------------------------&nbsp;&nbsp;blog
+            &nbsp;&nbsp;------------------------------------------
+          </p>
+          <ul>
+            <li>
+              <a>resume</a>
+              <span class="float-right">coming soon</span>
+            </li>
+            <li>
+              <a>on lifepo.st</a>
+              <span class="float-right">coming soon</span>
+            </li>
+          </ul>
+        </div>
       </div>
     </div>
   </body>
