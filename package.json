@@ -1,0 +1,22 @@
+{
+  "name": "jsmnk.co",
+  "version": "0.0.0",
+  "description": "Website of Jasmine Kim",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jiminkk/my-website.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jiminkk/my-website/issues"
+  },
+  "homepage": "https://github.com/jiminkk/my-website#readme",
+  "devDependencies": {
+    "vite": "^8.1.3"
+  }
+}
