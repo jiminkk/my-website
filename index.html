@@ -52,6 +52,7 @@
       border: black 1px solid;
       padding: 0 0 10px 20px;
       width: 365px;
+      touch-action: none;
     }
     .off-center {
       /* padding: 100px 0 0 100px; */
@@ -97,7 +98,7 @@
 
   <body>
     <div class="container">
-      <div class="box">
+      <div class="box" id="slider">
         <div class="off-center">
           <h1 class="name">Jasmine 지민 Kim</h1>
         </div>
@@ -137,5 +138,75 @@
         </div>
       </div>
     </div>
+
+    <script>
+      const box = document.getElementById("slider")
+
+      const grip = 12
+      let x = 0
+      let y = 0
+      let startPointerX = 0
+      let startPointerY = 0
+      let startBoxX = 0
+      let startBoxY = 0
+      let dragging = false
+
+      box.addEventListener("mouseover", (event) => {
+        const rect = box.getBoundingClientRect()
+        const touchingBorder =
+          event.clientX - rect.left <= grip ||
+          rect.right - event.clientX <= grip ||
+          event.clientY - rect.top <= grip ||
+          rect.bottom - event.clientY <= grip
+
+        if (touchingBorder) {
+          box.style.cursor = "pointer"
+        } else {
+          box.style.cursor = ""
+        }
+      })
+
+      box.addEventListener("pointerdown", (event) => {
+        const rect = box.getBoundingClientRect()
+        const touchingBorder =
+          event.clientX - rect.left <= grip ||
+          rect.right - event.clientX <= grip ||
+          event.clientY - rect.top <= grip ||
+          rect.bottom - event.clientY <= grip
+
+        dragging = true
+        startPointerX = event.clientX
+        startPointerY = event.clientY
+        startBoxX = x
+        startBoxY = y
+
+        if (!touchingBorder) return
+
+        box.setPointerCapture(event.pointerId)
+        box.style.cursor = "grabbing"
+        event.preventDefault()
+      })
+
+      box.addEventListener("pointermove", (event) => {
+        if (!dragging) return
+
+        x = startBoxX + event.clientX - startPointerX
+        y = startBoxY + event.clientY - startPointerY
+
+        box.style.transform = `translate3d(${x}px, ${y}px, 0)`
+      })
+
+      function stopDragging(event) {
+        dragging = false
+        box.style.cursor = ""
+
+        if (box.hasPointerCapture(event.pointerId)) {
+          box.releasePointerCapture(event.pointerId)
+        }
+      }
+
+      box.addEventListener("pointerup", stopDragging)
+      box.addEventListener("pointercancel", stopDragging)
+    </script>
   </body>
 </html>
