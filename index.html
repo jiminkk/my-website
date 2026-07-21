@@ -161,11 +161,11 @@
           event.clientY - rect.top <= grip ||
           rect.bottom - event.clientY <= grip
 
-        if (touchingBorder) {
-          box.style.cursor = "pointer"
-        } else {
-          box.style.cursor = ""
-        }
+        // if (touchingBorder) {
+        //   box.style.cursor = "pointer"
+        // } else {
+        box.style.cursor = ""
+        // }
       })
 
       box.addEventListener("pointerdown", (event) => {
@@ -185,13 +185,13 @@
         if (!touchingBorder) return
 
         box.setPointerCapture(event.pointerId)
-        box.style.cursor = "grabbing"
         event.preventDefault()
       })
 
       box.addEventListener("pointermove", (event) => {
         if (!dragging) return
 
+        box.style.cursor = "grabbing"
         x = startBoxX + event.clientX - startPointerX
         y = startBoxY + event.clientY - startPointerY
 
