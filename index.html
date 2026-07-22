@@ -103,7 +103,7 @@
           <h1 class="name">Jasmine 지민 Kim</h1>
         </div>
 
-        <div class="about">experimentalist & blogger</div>
+        <div class="about">experimentalist, developer, writer</div>
         <div class="projects">
           <p class="subheader">
             -----------------&nbsp;&nbsp;projects
@@ -154,18 +154,7 @@
       let dragging = false
 
       box.addEventListener("mouseover", (event) => {
-        const rect = box.getBoundingClientRect()
-        const touchingBorder =
-          event.clientX - rect.left <= grip ||
-          rect.right - event.clientX <= grip ||
-          event.clientY - rect.top <= grip ||
-          rect.bottom - event.clientY <= grip
-
-        // if (touchingBorder) {
-        //   box.style.cursor = "pointer"
-        // } else {
-        box.style.cursor = ""
-        // }
+        box.style.cursor = "pointer"
       })
 
       box.addEventListener("pointerdown", (event) => {
@@ -188,7 +177,7 @@
         event.preventDefault()
       })
 
-      box.addEventListener("pointermove", (event) => {
+      window.addEventListener("pointermove", (event) => {
         if (!dragging) return
 
         box.style.cursor = "grabbing"
