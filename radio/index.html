@@ -1,0 +1,2075 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>tune in.</title>
+    <link rel="icon" type="image/svg+xml" href="svg/vinyl-alt.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Lato:ital,wght@0,100;0,300;0,400;0,700;0,900;1,100;1,300;1,400;1,700;1,900&family=Rubik+Microbe&family=Rubik:ital,wght@0,300..900;1,300..900&display=swap"
+      rel="stylesheet"
+    />
+
+    <style>
+      :root {
+        --bg: #f9f5e3;
+        --panel: #f9f5e3;
+        --panel-2: #f4f0da;
+        --text: #2b2a26;
+        --muted: #8a877d;
+        --extra-muted: rgba(0, 0, 0, 0.1);
+        --accent: #f8f2dc;
+        --accent-2: #1f9e8a;
+        --border: #e3dfd5;
+        /* filled part of the volume slider: same hue as the knob, but lighter */
+        --volume-fill: rgba(43, 42, 38, 0.5);
+        --star: #f4c430; /* favorited-star yellow */
+        --radius: 16px;
+      }
+
+      .rubik-microbe-regular {
+        font-family: "Rubik Microbe", system-ui;
+        font-weight: 400;
+        font-style: normal;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        font-family:
+          "Rubik",
+          -apple-system,
+          BlinkMacSystemFont,
+          "Segoe UI",
+          Roboto,
+          sans-serif;
+        background: var(--bg);
+        color: var(--text);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        /* extra top padding clears the fixed search bar so the app centers in
+           the space below it rather than the whole viewport */
+        padding: 80px 24px 24px;
+      }
+
+      .app {
+        display: grid;
+        width: 100%;
+        max-width: 420px;
+        text-align: center;
+        gap: 20px;
+        /* ease the layout shift when the media query changes the gap */
+        transition: gap 0.3s ease;
+      }
+
+      h1 {
+        font-size: 1.9rem;
+        margin: 0 0 28px;
+        letter-spacing: -0.5px;
+        /* ease the margin change at the media breakpoint */
+        transition: margin 0.3s ease;
+      }
+
+      .footer {
+        position: fixed;
+        bottom: 10px;
+        color: var(--muted);
+        font-size: 0.75rem;
+        text-align: center;
+        margin-top: 24px;
+      }
+      /* icon shown in the footer only on mobile (see media query) */
+      .footer-icon {
+        display: none;
+        width: 64px;
+        height: auto;
+        margin: 0 auto 8px;
+        user-select: none;
+      }
+
+      .vinyl-container {
+        display: grid;
+        gap: 34px;
+      }
+      .radio-container {
+        display: grid;
+        gap: 9px;
+      }
+      /* ---------- Turntable ---------- */
+      @keyframes sway {
+        0%,
+        100% {
+          transform: rotate(0deg);
+        }
+        50% {
+          transform: rotate(1deg);
+        }
+      }
+      @keyframes spin {
+        to {
+          transform: rotate(360deg);
+        }
+      }
+
+      .turntable {
+        position: relative;
+      }
+
+      .vinyl {
+        /* shrink to the artwork and center it, so the spin rotates around the
+           record's actual center instead of the full-width block's center */
+        width: fit-content;
+        margin-inline: auto;
+        animation: sway 2s infinite;
+      }
+
+      .vinyl-art {
+        display: block;
+        width: 400px;
+        height: auto;
+        user-select: none;
+        cursor: pointer;
+        /* ease the record resize at the media breakpoint */
+        transition: width 0.3s ease;
+      }
+
+      .turntable.playing .vinyl {
+        animation: spin 5s linear infinite;
+        animation-play-state: running;
+      }
+
+      /* while stalling to a stop, no keyframe animation —
+         JS drives the transform with an ease-out transition */
+      .vinyl.stalling {
+        animation: none;
+        transition: transform 0.5s cubic-bezier(0.5, 1, 0.89, 1);
+      }
+
+      /* ---------- Info + controls ---------- */
+      .station-name {
+        font-size: 1.15rem;
+        font-weight: 500;
+        line-height: 1.3;
+        min-height: 1.3em;
+        word-break: break-word;
+        /* cap really long names at 4 lines with an ellipsis so they can't
+           grow the app and push the "tune in." title off-screen */
+        display: -webkit-box;
+        -webkit-line-clamp: 3;
+        line-clamp: 3;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+      }
+
+      .station-name-row {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+      }
+      /* small "source radio" link in the footer */
+      .source-link {
+        display: inline-block;
+        font-size: 0.7rem;
+        color: var(--muted);
+        text-decoration: none;
+        opacity: 0.6;
+      }
+      .source-link:hover {
+        color: var(--text);
+        opacity: 1;
+      }
+      .source-link[hidden] {
+        display: none;
+      }
+      .meta {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+      }
+
+      .chip {
+        font-size: 0.72rem;
+        color: var(--muted);
+        background: var(--panel-2);
+        padding: 4px 9px;
+        border-radius: 99px;
+      }
+
+      .status {
+        color: var(--muted);
+        font-size: 0.9rem;
+      }
+      .status.error {
+        color: var(--muted);
+      }
+
+      .now-playing {
+        margin-top: 10px;
+        font-size: 0.9rem;
+        color: var(--accent-2);
+        font-weight: 600;
+      }
+      .now-playing:empty {
+        display: none;
+      }
+
+      .loading {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-bottom: 7px;
+      }
+      .loading:empty {
+        display: none;
+      }
+      /* animated ellipsis after "connecting" — dots build up one at a time.
+         Fixed-width, left-aligned box so the text doesn't shift as they cycle. */
+      .loading::after {
+        content: "";
+        display: inline-block;
+        width: 1.1em;
+        text-align: left;
+        animation: ellipsis 1.6s steps(1, end) infinite;
+      }
+      @keyframes ellipsis {
+        0% {
+          content: "";
+        }
+        25% {
+          content: ".";
+        }
+        50% {
+          content: "..";
+        }
+        75% {
+          content: "...";
+        }
+      }
+
+      /* ---------- Play history ---------- */
+      .history {
+        position: fixed;
+        left: 24px;
+        top: 28px;
+        bottom: 24px;
+        display: flex;
+        flex-direction: column;
+        width: 200px;
+        color: var(--muted);
+        font-size: 0.78rem;
+        line-height: 1.65;
+        text-align: left;
+        /* both lists (favorites + recently played) scroll together */
+        overflow-y: auto;
+        scrollbar-width: none;
+      }
+      .history::-webkit-scrollbar {
+        display: none;
+      }
+      /* fade the text (not the icon — it's a sibling, so it stays full color) */
+      .history h2,
+      .history-list {
+        opacity: 0.6;
+      }
+
+      .history-icon {
+        flex-shrink: 0;
+        width: 50%;
+        display: block;
+        margin-bottom: 12px;
+        user-select: none;
+      }
+
+      .history h2 {
+        flex-shrink: 0;
+        font-size: 0.68rem;
+        text-transform: uppercase;
+        letter-spacing: 0.06em;
+        margin: 0 0 8px;
+        font-weight: 500;
+      }
+      .history-list {
+        /* spacing below each list (before the next header / footer) */
+        margin-bottom: 14px;
+      }
+      .history-list:last-child {
+        margin-bottom: 0;
+      }
+
+      .history-list p {
+        margin: 0;
+      }
+      .history-item {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+      }
+      .history-name {
+        /* size to the text (don't fill the row) so the star sits right after
+           it; still shrink + ellipsis when the name is too long */
+        flex: 0 1 auto;
+        min-width: 0;
+        overflow: hidden;
+        white-space: nowrap;
+        text-overflow: ellipsis;
+        text-align: left;
+      }
+      /* clickable (replayable) names render as text buttons */
+      button.history-name {
+        font: inherit;
+        color: inherit;
+        background: none;
+        border: 0;
+        padding: 0;
+        cursor: pointer;
+      }
+      button.history-name:hover {
+        color: var(--text);
+        text-decoration: none;
+      }
+      .fav[disabled],
+      .fav[hidden] {
+        display: none;
+      }
+      .fav {
+        flex-shrink: 0;
+        display: inline-flex;
+        align-items: center;
+        padding: 0;
+        margin: 0;
+        border: 0;
+        background: none;
+        color: var(--muted);
+        cursor: pointer;
+      }
+      .fav svg {
+        width: 13px;
+        height: 13px;
+        fill: none;
+        stroke: currentColor;
+        stroke-width: 2;
+        stroke-linejoin: round;
+      }
+      .fav:hover {
+        color: var(--text);
+      }
+      .fav.is-fav {
+        color: var(--star);
+      }
+      .fav.is-fav svg {
+        fill: currentColor;
+      }
+      .history:empty {
+        display: none;
+      }
+      .now-playing .np-artist {
+        color: var(--muted);
+        font-weight: 400;
+      }
+
+      .controls {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        margin-top: 6px;
+      }
+
+      .ctrl {
+        font: inherit;
+        width: 54px;
+        height: 54px;
+        border-radius: 50%;
+        border: 1px solid var(--border);
+        background: var(--border);
+        color: var(--text);
+        font-size: 1.2rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition:
+          transform 0.08s ease,
+          opacity 0.15s ease;
+      }
+      .ctrl.play {
+        color: var(--panel);
+      }
+      .ctrl:active {
+        transform: scale(0.92);
+      }
+      .ctrl:disabled {
+        opacity: 0.5;
+        cursor: progress;
+      }
+
+      /* Volume button + slider that reveals on hover */
+      .volume-control {
+        position: relative;
+        display: inline-flex;
+      }
+      .volume-popup {
+        position: absolute;
+        /* sit on the same horizontal line as the button, extending to the
+           right over the other controls */
+        top: 50%;
+        left: 100%;
+        transform: translateY(-50%);
+        /* padding bridges the gap to the button so hover doesn't drop */
+        padding-left: 2px;
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.2s ease;
+      }
+      .volume-control:hover .volume-popup,
+      .volume-control:focus-within .volume-popup,
+      .volume-control.open .volume-popup {
+        opacity: 1;
+        pointer-events: auto;
+      }
+      /* Long-press to reveal on touch: don't let the press select text or
+         pop the OS callout menu. */
+      .volume-control button {
+        -webkit-touch-callout: none;
+        user-select: none;
+      }
+      .volume-popup-inner {
+        background: var(--border);
+        border-radius: 999px;
+        padding: 10px 14px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+      }
+      .volume {
+        -webkit-appearance: none;
+        appearance: none;
+        display: block;
+        width: 90px;
+        height: 6px;
+        border-radius: 999px;
+        /* shade the portion left of the knob to show the volume level */
+        background: linear-gradient(
+          to right,
+          var(--volume-fill) var(--fill, 80%),
+          var(--panel) var(--fill, 80%)
+        );
+        cursor: pointer;
+        outline: none;
+      }
+      .volume::-webkit-slider-thumb {
+        -webkit-appearance: none;
+        appearance: none;
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--text);
+        border: none;
+        cursor: pointer;
+      }
+      .volume::-moz-range-thumb {
+        width: 16px;
+        height: 16px;
+        border-radius: 50%;
+        background: var(--text);
+        border: none;
+        cursor: pointer;
+      }
+
+      /* ---------- Floating search ---------- */
+      .search {
+        position: fixed;
+        top: 16px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: min(92vw, 420px);
+        z-index: 10;
+      }
+      .search input {
+        width: 100%;
+        font: inherit;
+        font-size: small;
+        padding: 12px 16px;
+        border-radius: 999px;
+        border: 1px solid var(--panel-2);
+        background: var(--panel-2);
+        color: var(--muted);
+        outline: none;
+        caret-color: var(--muted);
+      }
+      .label {
+        color: var(--muted);
+      }
+      .search input:hover {
+        color: var(--muted);
+        border-radius: 999px;
+        border: 1px solid var(--border);
+      }
+      .search input::placeholder {
+        color: var(--extra-muted);
+        opacity: 1;
+      }
+      .search input::placeholder:focus {
+        color: var(--muted);
+        opacity: 1;
+      }
+      .search input:focus {
+        border-color: var(--accent);
+        border-radius: 999px;
+        border: 1px solid var(--border);
+        /* box-shadow: 0 1px 10px rgba(0, 0, 0, 0.05); */
+      }
+
+      .results {
+        margin-top: 8px;
+        background: var(--panel-2);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        /* box-shadow: 0 10px 30px rgba(0, 0, 0, 0.12); */
+        overflow-y: auto;
+        max-height: 55vh;
+        color: var(--muted);
+        scrollbar-width: none;
+      }
+      .results:empty {
+        display: none;
+      }
+      .results::-webkit-scrollbar {
+        display: none;
+      }
+
+      .result {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        padding: 10px 14px;
+        cursor: pointer;
+        text-align: left;
+        border-bottom: 1px solid var(--panel);
+      }
+      .result:last-child {
+        border-bottom: none;
+      }
+      .result:hover {
+        background: var(--panel-2);
+      }
+      .result img,
+      .result .ph {
+        width: 30px;
+        height: 30px;
+        border-radius: 6px;
+        background: var(--panel-2);
+        object-fit: cover;
+        flex-shrink: 0;
+      }
+      .result .r-text {
+        min-width: 0;
+      }
+      .result .r-name {
+        font-size: 12px;
+        font-weight: 500;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .result .r-sub {
+        font-size: 0.72rem;
+        color: var(--muted);
+      }
+      .results .r-status {
+        padding: 12px 14px;
+        color: var(--extra-muted);
+        font-size: 0.85rem;
+      }
+
+      .popout-btn {
+        position: fixed;
+        top: 16px;
+        right: 16px;
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 8px 14px;
+        border-radius: 999px;
+        border: 1px solid var(--panel);
+        background: var(--panel);
+        color: var(--muted);
+        font: inherit;
+        font-size: 0.8rem;
+        cursor: pointer;
+        z-index: 11;
+        transition:
+          color 0.15s,
+          transform 0.08s,
+          background 0.15s;
+      }
+      .popout-btn svg {
+        width: 14px;
+        height: 14px;
+      }
+      .popout-btn:hover {
+        color: var(--text);
+        font-weight: 400;
+        /* border: 1px solid var(--border); */
+      }
+      .popout-btn:active {
+        transform: scale(0.92);
+      }
+      .popout-btn.active {
+        background: var(--accent);
+        border-color: var(--accent);
+      }
+      .popout-btn[hidden] {
+        display: none;
+      }
+
+      /* ---------- Small screens / short or narrow ---------- */
+      /* Trigger when narrow OR short: a short-but-wide window would otherwise
+         keep the fixed search bar floating over the vertically-centered
+         title. */
+      @media (max-width: 600px), (max-height: 770px) {
+        /* Stack everything in normal flow so nothing overlaps: the search
+           bar sits above the title, which sits above the vinyl. */
+        body {
+          flex-direction: column;
+          justify-content: flex-start;
+          align-items: center;
+          /* search is in flow here, so no extra top clearance is needed */
+          padding-top: 24px;
+        }
+        .app {
+          gap: 12px;
+          /* top-align the stack here instead of vertically centering */
+          margin: 0;
+        }
+        .search {
+          /* relative (not static) so the results can overlay anchored to it */
+          position: relative;
+          /* cancel the desktop fixed-centering offsets */
+          left: auto;
+          top: auto;
+          transform: none;
+          width: 100%;
+          max-width: 420px;
+          margin-bottom: 24px;
+        }
+        /* float the results above the rest of the app instead of pushing it
+           down; the fixed "open miniplayer" button still sits above these */
+        .results {
+          position: absolute;
+          left: 0;
+          right: 0;
+          top: 100%;
+        }
+        h1 {
+          margin-bottom: 16px;
+        }
+        /* Shrink the record so it fits both width and height. */
+        .vinyl-art {
+          width: min(70vw, 60vh, 320px);
+          height: auto;
+        }
+        .radio-container {
+          gap: 10px;
+        }
+      }
+      @media (max-height: 880px) {
+        .footer {
+          position: relative;
+          margin-top: 120px;
+          margin-bottom: 0;
+          order: 2;
+          bottom: 0;
+        }
+      }
+      @media (max-width: 600px) {
+        /* Drop the history out of the fixed left sidebar and into the flow,
+           ordered below the vinyl and the controls. */
+        .history {
+          position: static;
+          width: 100%;
+          text-align: center;
+          order: 1;
+          margin-top: 87px;
+        }
+        /* on mobile the icon moves down to the footer instead */
+        .history-icon {
+          display: none;
+        }
+        /* center the favorite + recently-played rows */
+        .history-item {
+          justify-content: center;
+        }
+        .footer-icon {
+          display: block;
+        }
+        .footer {
+          margin-top: 50px;
+          position: relative;
+          order: 2;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="search">
+      <input
+        id="searchInput"
+        type="text"
+        placeholder="search stations…"
+        autocomplete="off"
+      />
+      <div class="results" id="results"></div>
+    </div>
+
+    <aside class="history" id="history"></aside>
+
+    <div class="app">
+      <h1>tune in.</h1>
+
+      <div class="vinyl-container">
+        <div class="turntable" id="turntable">
+          <div class="vinyl">
+            <img
+              class="vinyl-art"
+              src="svg/vinyl.svg"
+              alt="Spinning vinyl record"
+              draggable="false"
+            />
+          </div>
+        </div>
+
+        <div class="radio-container">
+          <div class="loading" id="loading"></div>
+          <div class="station-name-row">
+            <div class="station-name" id="stationName">
+              Hover anywhere to start…
+            </div>
+            <button
+              class="fav"
+              id="favBtn"
+              type="button"
+              title="Favorite"
+              aria-label="Toggle favorite"
+              hidden
+            >
+              <svg viewBox="0 0 24 24">
+                <polygon
+                  points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+                ></polygon>
+              </svg>
+            </button>
+          </div>
+          <div class="meta" id="meta"></div>
+          <div class="now-playing" id="nowPlaying"></div>
+
+          <div class="controls">
+            <div class="volume-control">
+              <div class="volume-popup">
+                <div class="volume-popup-inner">
+                  <input
+                    type="range"
+                    class="volume"
+                    id="volume"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    value="0.8"
+                    title="Volume"
+                    aria-label="Volume"
+                  />
+                </div>
+              </div>
+              <button
+                class="ctrl"
+                id="volumeBtn"
+                title="Volume"
+                aria-label="Volume"
+              >
+                <svg
+                  width="22"
+                  height="22"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                >
+                  <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                  <path
+                    d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+            <button class="ctrl play" id="playBtn" title="Play / pause">
+              ▶
+            </button>
+            <button class="ctrl" id="nextBtn" title="Next station">⏭</button>
+          </div>
+        </div>
+      </div>
+
+      <audio id="player"></audio>
+
+      <button
+        id="popoutBtn"
+        class="popout-btn"
+        title="Open mini player"
+        aria-label="Open mini player"
+      >
+        <span class="popout-label">open miniplayer</span>
+        <svg
+          width="14"
+          height="14"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path d="M15 3h6v6" />
+          <path d="M10 14 21 3" />
+          <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+        </svg>
+      </button>
+    </div>
+
+    <footer class="footer">
+      <img
+        class="footer-icon"
+        src="svg/vinyl-alt.svg"
+        alt=""
+        draggable="false"
+      />
+      <a
+        class="source-link"
+        id="sourceLink"
+        target="_blank"
+        rel="noopener noreferrer"
+        hidden
+        >source radio</a
+      >
+    </footer>
+
+    <script>
+      // Radio Browser mirrors — we try them in order if one is down.
+      const SERVERS = [
+        "https://de1.api.radio-browser.info",
+        "https://fi1.api.radio-browser.info",
+        "https://nl1.api.radio-browser.info",
+        "https://de2.api.radio-browser.info",
+      ]
+
+      const els = {
+        turntable: document.getElementById("turntable"),
+        vinyl: document.querySelector(".vinyl"),
+        vinylArt: document.querySelector(".vinyl-art"),
+        stationName: document.getElementById("stationName"),
+        sourceLink: document.getElementById("sourceLink"),
+        favBtn: document.getElementById("favBtn"),
+        loading: document.getElementById("loading"),
+        meta: document.getElementById("meta"),
+        nowPlaying: document.getElementById("nowPlaying"),
+        playBtn: document.getElementById("playBtn"),
+        nextBtn: document.getElementById("nextBtn"),
+        volume: document.getElementById("volume"),
+        volumeBtn: document.getElementById("volumeBtn"),
+        player: document.getElementById("player"),
+      }
+
+      /* ----- VINYL DECORATION LOGIC ----- */
+
+      const VINYL_COLORS = [
+        { name: "Classic black", hex: "#1a1612" }, // warm near-black
+        { name: "Midnight", hex: "#141821" }, // cool near-black
+        { name: "Oxblood", hex: "#3d1518" }, // deep burgundy
+        { name: "Forest", hex: "#1c2e1f" }, // very dark green
+        { name: "Cobalt", hex: "#1a2847" }, // deep blue
+        { name: "Amber", hex: "#3d2410" }, // dark brown
+        { name: "Cream", hex: "#e8dfc9" }, // warm off-white (rare pressing)
+        { name: "Translucent red", hex: "#5a1a1a" },
+        { name: "Mustard", hex: "#5a4410" },
+      ]
+
+      function hexToRgb(hex) {
+        const h = hex.replace("#", "")
+        return {
+          r: parseInt(h.slice(0, 2), 16) / 255,
+          g: parseInt(h.slice(2, 4), 16) / 255,
+          b: parseInt(h.slice(4, 6), 16) / 255,
+        }
+      }
+
+      // sRGB → linear RGB → OKLab
+      function rgbToOklab({ r, g, b }) {
+        const lin = (c) =>
+          c <= 0.04045 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4)
+        const lr = lin(r),
+          lg = lin(g),
+          lb = lin(b)
+
+        const l = Math.cbrt(
+          0.4122214708 * lr + 0.5363325363 * lg + 0.0514459929 * lb,
+        )
+        const m = Math.cbrt(
+          0.2119034982 * lr + 0.6806995451 * lg + 0.1073969566 * lb,
+        )
+        const s = Math.cbrt(
+          0.0883024619 * lr + 0.2817188376 * lg + 0.6299787005 * lb,
+        )
+
+        return {
+          L: 0.2104542553 * l + 0.793617785 * m - 0.0040720468 * s,
+          a: 1.9779984951 * l - 2.428592205 * m + 0.4505937099 * s,
+          b: 0.0259040371 * l + 0.7827717662 * m - 0.808675766 * s,
+        }
+      }
+
+      function oklabDistance(c1, c2) {
+        const dL = c1.L - c2.L
+        const da = c1.a - c2.a
+        const db = c1.b - c2.b
+        return Math.sqrt(dL * dL + da * da + db * db)
+      }
+
+      function hashHue(str) {
+        let h = 0
+        for (let i = 0; i < str.length; i++)
+          h = (h * 31 + str.charCodeAt(i)) % 360
+        return h
+      }
+
+      function hslToHex(h, s, l) {
+        l /= 100
+        const a = (s * Math.min(l, 1 - l)) / 100
+        const f = (n) => {
+          const k = (n + h / 30) % 12
+          const c = l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1))
+          return Math.round(255 * c)
+            .toString(16)
+            .padStart(2, "0")
+        }
+        return `#${f(0)}${f(8)}${f(4)}`
+      }
+
+      function deriveLabelColor(name) {
+        return hslToHex(hashHue(name || "unknown"), 55, 45)
+      }
+
+      function pickVinylColor(labelHex, mode = "contrast") {
+        const labelLab = rgbToOklab(hexToRgb(labelHex))
+        const scored = VINYL_COLORS.map((v) => ({
+          ...v,
+          distance: oklabDistance(labelLab, rgbToOklab(hexToRgb(v.hex))),
+        }))
+        scored.sort((a, b) => a.distance - b.distance)
+        return mode === "contrast" ? scored[scored.length - 1] : scored[0]
+      }
+
+      /* ----- STATION LOGIC ----- */
+
+      let triedStations = new Set() // avoid replaying the same dud in a session
+      // True while we swap the audio source for a new station. Swapping fires a
+      // spurious "pause" event; we ignore it so the vinyl keeps spinning instead
+      // of stopping and re-spinning (which snapped it back into position).
+      let switchingStation = false
+      // Pending auto-skip after a stream fails to play (see the error handler).
+      let autoSkipTimer = null
+      // The station currently loaded on the page (for the now-playing star).
+      let currentStation = null
+
+      async function fetchRandomStation() {
+        const params = new URLSearchParams({
+          limit: "20",
+          order: "random",
+          hidebroken: "true",
+          is_https: "true", // required: http streams are blocked on https pages
+          codec: "MP3",
+        })
+
+        for (const base of SERVERS) {
+          try {
+            const res = await fetch(`${base}/json/stations/search?${params}`)
+            if (!res.ok) continue
+            const stations = await res.json()
+            const usable = stations.filter(
+              (s) =>
+                s.url_resolved &&
+                s.url_resolved.startsWith("https") &&
+                !triedStations.has(s.stationuuid),
+            )
+            if (usable.length)
+              return usable[Math.floor(Math.random() * usable.length)]
+            if (stations.length)
+              return stations[Math.floor(Math.random() * stations.length)]
+          } catch (_) {
+            /* try next mirror */
+          }
+        }
+        return null
+      }
+
+      function countClick(uuid) {
+        if (!uuid) return
+        fetch(`${SERVERS[0]}/json/url/${uuid}`).catch(() => {})
+      }
+
+      function setMessage(msg, isError = false) {
+        els.stationName.innerHTML = `<span class="status${isError ? " error" : ""}">${msg}</span>`
+        els.meta.innerHTML = ""
+        els.favBtn.hidden = true // no favorite star during status messages
+        els.sourceLink.hidden = true // and no "source radio" link
+      }
+
+      function renderStation(s, { play = false } = {}) {
+        triedStations.add(s.stationuuid)
+        currentStation = s
+        const labelHex = deriveLabelColor(s.name)
+        const vinyl = pickVinylColor(labelHex, "contrast")
+        document
+          .querySelector(".vinyl")
+          .style.setProperty("--vinyl-base", vinyl.hex)
+
+        els.stationName.textContent = s.name || "Unknown station"
+        // Show the "source radio" link when the station has a website.
+        const homepage = (s.homepage || "").trim()
+        const hasSite = /^https?:\/\//i.test(homepage)
+        if (hasSite) {
+          els.sourceLink.href = homepage
+          els.sourceLink.hidden = false
+        } else {
+          els.sourceLink.removeAttribute("href")
+          els.sourceLink.hidden = true
+        }
+
+        const bits = []
+        if (s.country) bits.push(s.country)
+        if (s.bitrate) bits.push(`${s.bitrate} kbps`)
+        ;(s.tags || "")
+          .split(",")
+          .filter(Boolean)
+          .slice(0, 3)
+          .forEach((t) => bits.push("#" + t.trim()))
+        els.meta.innerHTML = bits
+          .map((b) => `<span class="chip">${escapeHtml(b)}</span>`)
+          .join("")
+
+        // Load the station. Keep playing if the user already had it playing
+        // (so switching stations stays seamless), or start it when the caller
+        // explicitly asks (e.g. picking a search result). Otherwise a fresh
+        // load stays paused until they click play.
+        const wasPlaying = !els.player.paused
+        switchingStation = true
+        els.player.src = s.url_resolved
+        if (wasPlaying || play) {
+          setLoading(true)
+          // clear the loading state if playback is blocked (e.g. autoplay)
+          els.player.play().catch(() => setLoading(false))
+        }
+        countClick(s.stationuuid)
+        startNowPlaying(s.url_resolved)
+        addHistory(s)
+        syncMiniPlayer()
+        syncFavUI()
+        // Put the station id in a query param so the page is shareable.
+        // (`history` here is our play-history array, so use window.history.)
+        if (isUuid(s.stationuuid)) {
+          const url = new URL(window.location.href)
+          url.searchParams.set("station", s.stationuuid)
+          window.history.replaceState(null, "", url)
+        }
+      }
+
+      // ---------- Play history + favorites (localStorage) ----------
+      const HISTORY_KEY = "radioHistory"
+      const FAVORITES_KEY = "radioFavorites"
+      let history = loadHistory()
+      let favorites = loadFavorites()
+
+      // Star icon (outline by default; filled via CSS when favorited)
+      const STAR_SVG =
+        '<svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>'
+
+      function loadHistory() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(HISTORY_KEY)) || []
+          // Migrate the old format (array of name strings) to station objects.
+          return raw.map((e) => (typeof e === "string" ? { name: e } : e))
+        } catch (_) {
+          return []
+        }
+      }
+
+      // Real Radio Browser ids look like "9617a958-0601-11e8-ae97-52543be04c81".
+      function isUuid(s) {
+        return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          s || "",
+        )
+      }
+
+      // Favorites are stored as full station objects (keyed by uuid) so they
+      // persist independently of the capped history.
+      function loadFavorites() {
+        try {
+          const raw = JSON.parse(localStorage.getItem(FAVORITES_KEY)) || []
+          const map = new Map()
+          for (const e of raw) {
+            if (typeof e === "string") {
+              // legacy bare string: a real uuid, or (older) a station name
+              map.set(
+                e,
+                isUuid(e) ? { stationuuid: e } : { stationuuid: e, name: e },
+              )
+            } else if (e && e.stationuuid) {
+              // if the "uuid" is actually a name, surface it as the display name
+              if (!e.name && !isUuid(e.stationuuid)) e.name = e.stationuuid
+              map.set(e.stationuuid, e)
+            }
+          }
+          return map
+        } catch (_) {
+          return new Map()
+        }
+      }
+
+      function saveFavorites() {
+        try {
+          localStorage.setItem(
+            FAVORITES_KEY,
+            JSON.stringify([...favorites.values()]),
+          )
+        } catch (_) {}
+      }
+
+      // Keep only the fields we need to render + replay a station.
+      function stationFields(s) {
+        return {
+          stationuuid: s.stationuuid,
+          name: s.name,
+          url_resolved: s.url_resolved,
+          homepage: s.homepage,
+          country: s.country,
+          bitrate: s.bitrate,
+          tags: s.tags,
+        }
+      }
+
+      // Accepts a full station object or just a uuid string.
+      function toggleFavorite(station) {
+        const id = typeof station === "string" ? station : station?.stationuuid
+        if (!id) return
+        if (favorites.has(id)) {
+          favorites.delete(id)
+        } else {
+          // resolve a full object to store (no cap on favorites)
+          const src =
+            (typeof station === "object" && station) ||
+            history.find((h) => h.stationuuid === id) ||
+            (currentStation?.stationuuid === id ? currentStation : null)
+          favorites.set(id, src ? stationFields(src) : { stationuuid: id })
+        }
+        saveFavorites()
+        renderHistory()
+        syncFavUI()
+      }
+
+      // Reflect the current station's favorite state on the now-playing star
+      // (main page) and the mini player star.
+      function syncFavUI() {
+        const id = currentStation && currentStation.stationuuid
+        const on = !!id && favorites.has(id)
+        els.favBtn.hidden = !id
+        els.favBtn.classList.toggle("is-fav", on)
+        els.favBtn.setAttribute("aria-pressed", String(on))
+        if (pipWindow) {
+          const mf = pipWindow.document.getElementById("miniFav")
+          if (mf) {
+            mf.hidden = !id
+            mf.classList.toggle("is-fav", on)
+            mf.setAttribute("aria-pressed", String(on))
+          }
+        }
+      }
+
+      function addHistory(s) {
+        if (!s || !s.stationuuid) return
+        // keep each station once: drop any existing entry, then add to the top
+        // so the most recently played always surfaces first
+        history = history.filter((h) => h.stationuuid !== s.stationuuid)
+        history.unshift({
+          stationuuid: s.stationuuid,
+          name: s.name,
+          url_resolved: s.url_resolved,
+          homepage: s.homepage,
+          country: s.country,
+          bitrate: s.bitrate,
+          tags: s.tags,
+        })
+        if (history.length > 50) history.length = 50
+        try {
+          localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+        } catch (_) {}
+        renderHistory()
+      }
+
+      // Markup for a single station row (used by both lists).
+      function stationRowHTML(entry) {
+        const id = entry.stationuuid || ""
+        const fav = !!id && favorites.has(id)
+        const safe = escapeHtml(entry.name || "Unknown")
+        const playable = !!(id && entry.url_resolved)
+        const star =
+          `<button class="fav${fav ? " is-fav" : ""}" data-uuid="${escapeHtml(id)}"` +
+          `${id ? "" : " disabled"} aria-pressed="${fav}" aria-label="Toggle favorite" title="Favorite">` +
+          STAR_SVG +
+          `</button>`
+        const name = playable
+          ? `<button class="history-name" data-uuid="${escapeHtml(id)}" title="Play ${safe}">${safe}</button>`
+          : `<span class="history-name">${safe}</span>`
+        return `<p class="history-item">${name}${star}</p>`
+      }
+
+      function renderHistory() {
+        const el = document.getElementById("history")
+        const favList = [...favorites.values()]
+        if (!favList.length && !history.length) {
+          el.innerHTML = ""
+          return
+        }
+        const favSection = favList.length
+          ? `<h2>Favorites</h2>` +
+            `<div class="history-list">` +
+            favList.map(stationRowHTML).join("") +
+            `</div>`
+          : ""
+        const recentSection = history.length
+          ? `<h2 class="recent">Recently played</h2>` +
+            `<div class="history-list">` +
+            history.map(stationRowHTML).join("") +
+            `</div>`
+          : ""
+        el.innerHTML =
+          `<img class="history-icon" src="svg/vinyl-alt.svg" alt="" draggable="false" />` +
+          favSection +
+          recentSection
+      }
+
+      // Delegated history clicks (the list is re-rendered on every change, but
+      // #history itself persists). Star toggles favorite; name replays.
+      document.getElementById("history").addEventListener("click", (e) => {
+        const star = e.target.closest(".fav")
+        if (star) {
+          toggleFavorite(star.dataset.uuid)
+          return
+        }
+        const name = e.target.closest("button.history-name")
+        if (name) {
+          const id = name.dataset.uuid
+          const entry =
+            history.find((h) => h.stationuuid === id) || favorites.get(id)
+          if (entry) renderStation(entry, { play: true })
+        }
+      })
+
+      // Look up a station by exact name (case-insensitive) with an https stream.
+      // Returns null rather than guessing, so we never backfill the wrong one.
+      async function findStationByName(name) {
+        const params = new URLSearchParams({
+          name,
+          hidebroken: "true",
+          is_https: "true",
+          order: "clickcount",
+          reverse: "true",
+          limit: "10",
+        })
+        const target = name.trim().toLowerCase()
+        for (const base of SERVERS) {
+          const list = await fetchJson(`${base}/json/stations/search?${params}`)
+          if (!Array.isArray(list)) continue
+          const match = list.find(
+            (s) =>
+              (s.name || "").trim().toLowerCase() === target &&
+              s.url_resolved &&
+              s.url_resolved.startsWith("https"),
+          )
+          if (match) return match
+        }
+        return null
+      }
+
+      // Best-effort: upgrade any legacy (name-only) history entries to the full
+      // station format so they become clickable + favoritable.
+      async function backfillHistory() {
+        const legacy = history.filter((e) => e && !e.stationuuid && e.name)
+        if (!legacy.length) return
+        let changed = false
+        for (const entry of legacy) {
+          const s = await findStationByName(entry.name)
+          if (!s) continue
+          entry.stationuuid = s.stationuuid
+          entry.url_resolved = s.url_resolved
+          entry.homepage = s.homepage
+          entry.country = s.country
+          entry.bitrate = s.bitrate
+          entry.tags = s.tags
+          changed = true
+        }
+        if (changed) {
+          try {
+            localStorage.setItem(HISTORY_KEY, JSON.stringify(history))
+          } catch (_) {}
+          renderHistory()
+        }
+      }
+
+      // Fetch a single station by its exact uuid (precise, no guessing).
+      async function fetchStationByUuid(uuid) {
+        for (const base of SERVERS) {
+          const list = await fetchJson(`${base}/json/stations/byuuid/${uuid}`)
+          if (Array.isArray(list) && list[0]) return list[0]
+        }
+        return null
+      }
+
+      // Best-effort: upgrade legacy favorites (stored as uuid only) to full
+      // station objects so they show a name and can be replayed.
+      async function backfillFavorites() {
+        let changed = false
+        for (const [key, f] of [...favorites]) {
+          const realUuid = isUuid(f.stationuuid || "")
+          // already complete — nothing to do
+          if (realUuid && f.name && f.url_resolved) continue
+          let s = null
+          if (realUuid) {
+            // real id, missing details → look up by uuid
+            s =
+              history.find((h) => h.stationuuid === f.stationuuid && h.name) ||
+              (await fetchStationByUuid(f.stationuuid))
+          } else {
+            // namelike id (legacy) → resolve by exact name
+            const nm = f.name || key
+            s =
+              history.find(
+                (h) =>
+                  h.stationuuid &&
+                  isUuid(h.stationuuid) &&
+                  (h.name || "").toLowerCase() === nm.toLowerCase(),
+              ) || (await findStationByName(nm))
+          }
+          if (!s) continue
+          // re-key under the real uuid (drops the namelike key if it changed)
+          if (key !== s.stationuuid) favorites.delete(key)
+          favorites.set(s.stationuuid, stationFields(s))
+          changed = true
+        }
+        if (changed) {
+          saveFavorites()
+          renderHistory()
+        }
+      }
+
+      // ------ MINI POP UP -------
+      const popoutBtn = document.getElementById("popoutBtn")
+      let pipWindow = null
+
+      // Feature detection — hide the button on Safari/Firefox
+      if (!("documentPictureInPicture" in window)) {
+        popoutBtn.hidden = true
+      }
+
+      const MINI_CSS = `
+        body {
+          margin: 0;
+          font-family: "Rubik", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+          background: #f4f2ec;
+          color: #2b2a26;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 16px;
+          height: 100vh;
+          box-sizing: border-box;
+          gap: 14px;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .mini-vinyl {
+          position: relative;
+          width: 140px;
+          height: 140px;
+          cursor: pointer;
+        }
+        .mini-vinyl img { width: 100%; height: 100%; display: block; }
+        /* same spin + stall logic/timing as the main turntable */
+        .mini-vinyl.playing { animation: spin 5s linear infinite; }
+        .mini-vinyl.stalling {
+          animation: none;
+          transition: transform 0.5s cubic-bezier(0.5, 1, 0.89, 1);
+        }
+        .mini-name-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          max-width: 100%;
+        }
+        .mini-name {
+          font-size: 0.9rem;
+          font-weight: 600;
+          text-align: center;
+          min-width: 0;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+          padding: 0 0 0 8px;
+        }
+        .fav {
+          flex-shrink: 0;
+          display: inline-flex;
+          align-items: center;
+          padding: 0;
+          border: 0;
+          background: none;
+          color: #8a877d;
+          cursor: pointer;
+        }
+        .fav[hidden] { display: none; }
+        .fav svg {
+          width: 14px;
+          height: 14px;
+          fill: none;
+          stroke: currentColor;
+          stroke-width: 2;
+          stroke-linejoin: round;
+        }
+        .fav:hover,
+        .fav.is-fav { color: #f4c430; }
+        .fav.is-fav svg { fill: currentColor; }
+        .mini-controls { display: flex; gap: 8px; }
+        .mini-ctrl {
+          font: inherit;
+          width: 36px;
+          height: 36px;
+          border-radius: 50%;
+          border: 1px solid #e3dfd5;
+          background: #fff;
+          color: #2b2a26;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.08s ease;
+        }
+        .mini-ctrl.play { background: #403F4C; border-color: #403F4C; color: #fff; }
+        .mini-ctrl:active { transform: scale(0.92); }
+        .mini-ctrl svg { width: 18px; height: 18px; }
+
+        /* Volume button + hover slider, consistent with the main page */
+        .volume-control { position: relative; display: inline-flex; }
+        .volume-popup {
+          position: absolute;
+          top: 50%;
+          left: 100%;
+          transform: translateY(-50%);
+          padding-left: 2px;
+          opacity: 0;
+          pointer-events: none;
+          transition: opacity 0.2s ease;
+        }
+        .volume-control:hover .volume-popup,
+        .volume-control:focus-within .volume-popup {
+          opacity: 1;
+          pointer-events: auto;
+        }
+        .volume-popup-inner {
+          background: #e3dfd5;
+          border-radius: 999px;
+          padding: 8px 12px;
+          box-shadow: 0 6px 20px rgba(0, 0, 0, 0.08);
+        }
+        .volume {
+          -webkit-appearance: none;
+          appearance: none;
+          display: block;
+          width: 64px;
+          height: 6px;
+          border-radius: 999px;
+          background: linear-gradient(
+            to right,
+            rgba(43, 42, 38, 0.5) var(--fill, 80%),
+            #f4f2ec var(--fill, 80%)
+          );
+          cursor: pointer;
+          outline: none;
+        }
+        .volume::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #2b2a26;
+          border: none;
+          cursor: pointer;
+        }
+        .volume::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #2b2a26;
+          border: none;
+          cursor: pointer;
+        }
+      `
+
+      const MINI_HTML = `
+        <div class="mini-vinyl" id="miniVinyl"></div>
+        <div class="mini-name-row">
+          <div class="mini-name" id="miniName">tune in.</div>
+          <button class="fav" id="miniFav" type="button" title="Favorite" aria-label="Toggle favorite" hidden>
+            <svg viewBox="0 0 24 24"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+          </button>
+        </div>
+        <div class="mini-controls">
+          <div class="volume-control">
+            <div class="volume-popup">
+              <div class="volume-popup-inner">
+                <input type="range" class="volume" id="miniVolume" min="0" max="1" step="0.01" />
+              </div>
+            </div>
+            <button class="mini-ctrl" id="miniVolumeBtn" title="Volume" aria-label="Volume">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            </button>
+          </div>
+          <button class="mini-ctrl play" id="miniPlay">▶</button>
+          <button class="mini-ctrl" id="miniNext">⏭</button>
+        </div>
+      `
+
+      popoutBtn.addEventListener("click", async () => {
+        if (pipWindow) {
+          pipWindow.close()
+          return
+        }
+
+        try {
+          pipWindow = await documentPictureInPicture.requestWindow({
+            width: 320,
+            height: 320,
+          })
+
+          // Mirror the Google Fonts <link>s so "Rubik" loads in the PiP doc too.
+          document
+            .querySelectorAll('link[rel="stylesheet"], link[rel="preconnect"]')
+            .forEach((l) =>
+              pipWindow.document.head.appendChild(l.cloneNode(true)),
+            )
+
+          pipWindow.document.title = "tune in."
+
+          const style = pipWindow.document.createElement("style")
+          style.textContent = MINI_CSS
+          pipWindow.document.head.appendChild(style)
+          pipWindow.document.body.innerHTML = MINI_HTML
+
+          // Use the same vinyl artwork as the main page. The PiP document has
+          // its own base URL, so resolve the SVG to an absolute path.
+          const miniVinylEl = pipWindow.document.getElementById("miniVinyl")
+          const miniArt = pipWindow.document.createElement("img")
+          miniArt.src = new URL("svg/vinyl.svg", location.href).href
+          miniArt.alt = ""
+          miniArt.draggable = false
+          miniVinylEl.appendChild(miniArt)
+
+          // Controls in PiP talk to the audio element in the main page
+          miniVinylEl.addEventListener("click", togglePlay)
+          pipWindow.document
+            .getElementById("miniPlay")
+            .addEventListener("click", togglePlay)
+          pipWindow.document
+            .getElementById("miniNext")
+            .addEventListener("click", nextStation)
+          pipWindow.document
+            .getElementById("miniFav")
+            .addEventListener("click", () => {
+              if (currentStation) toggleFavorite(currentStation)
+            })
+
+          // Volume controls in the PiP mirror the main ones.
+          const miniVolume = pipWindow.document.getElementById("miniVolume")
+          miniVolume.addEventListener("input", () => {
+            els.player.volume = parseFloat(miniVolume.value)
+            if (els.player.volume > 0) els.player.muted = false
+          })
+          const miniVolumeBtn =
+            pipWindow.document.getElementById("miniVolumeBtn")
+          miniVolumeBtn.addEventListener("click", () => {
+            els.player.muted = !els.player.muted
+            miniVolumeBtn.blur()
+          })
+          syncVolumeUI()
+          syncFavUI()
+
+          pipWindow.addEventListener("pagehide", () => {
+            pipWindow = null
+            popoutBtn.classList.remove("active")
+          })
+
+          popoutBtn.classList.add("active")
+          syncMiniPlayer()
+        } catch (err) {
+          console.error("Could not open PiP window:", err)
+        }
+      })
+
+      function syncMiniPlayer() {
+        if (!pipWindow) return
+        const doc = pipWindow.document
+        const miniVinyl = doc.getElementById("miniVinyl")
+        const miniName = doc.getElementById("miniName")
+        const miniPlay = doc.getElementById("miniPlay")
+        if (!miniVinyl) return
+
+        // Mirror vinyl color from main
+        const vinylBase =
+          document
+            .querySelector(".vinyl")
+            .style.getPropertyValue("--vinyl-base") || "#1a1612"
+        miniVinyl.style.setProperty("--vinyl-base", vinylBase)
+
+        // Mirror station name + playing state, using the same spin/stall
+        // animation as the main turntable (the mini vinyl is its own host).
+        miniName.textContent = els.stationName.textContent
+        if (els.player.paused) {
+          miniPlay.textContent = "▶"
+          // don't stall while switching stations — keep it spinning through.
+          if (!switchingStation) stallToStop(miniVinyl, miniVinyl)
+        } else {
+          miniPlay.textContent = "⏸"
+          if (!miniVinyl.classList.contains("playing"))
+            spinUp(miniVinyl, miniVinyl)
+        }
+      }
+
+      // ---------- Now playing (best-effort) ----------
+      // Radio streams carry the track title as ICY metadata, which the <audio>
+      // element won't expose. We instead poll the server's status endpoint — this
+      // only works for stations whose server sends CORS headers; others stay blank.
+      let npTimer = null
+
+      function setNowPlaying(text) {
+        if (!text) {
+          els.nowPlaying.innerHTML = ""
+          return
+        }
+        // ICY StreamTitle convention is "Artist - Title".
+        const i = text.indexOf(" - ")
+        if (i > -1) {
+          const artist = text.slice(0, i).trim()
+          const title = text.slice(i + 3).trim()
+          els.nowPlaying.innerHTML = `♫ ${escapeHtml(title)} <span class="np-artist">— ${escapeHtml(artist)}</span>`
+        } else {
+          els.nowPlaying.innerHTML = `♫ ${escapeHtml(text.trim())}`
+        }
+      }
+
+      async function fetchJson(url) {
+        const ctrl = new AbortController()
+        const t = setTimeout(() => ctrl.abort(), 5000)
+        try {
+          const res = await fetch(url, { signal: ctrl.signal })
+          if (!res.ok) return null
+          return await res.json()
+        } catch (_) {
+          return null // CORS / network / timeout — expected for many stations
+        } finally {
+          clearTimeout(t)
+        }
+      }
+
+      async function fetchTrackTitle(streamUrl) {
+        let origin, mount
+        try {
+          const u = new URL(streamUrl)
+          origin = u.origin
+          mount = u.pathname
+        } catch (_) {
+          return null
+        }
+
+        // Icecast: /status-json.xsl
+        const ice = await fetchJson(`${origin}/status-json.xsl`)
+        if (ice && ice.icestats && ice.icestats.source) {
+          let sources = ice.icestats.source
+          if (!Array.isArray(sources)) sources = [sources]
+          // Prefer the source matching our mount; else the first one with a title.
+          const match = sources.find(
+            (s) => s.listenurl && s.listenurl.endsWith(mount),
+          )
+          const pick =
+            match || sources.find((s) => s.title || s.yp_currently_playing)
+          if (pick) {
+            const title = pick.title || pick.yp_currently_playing
+            if (title) return title
+          }
+        }
+
+        // Shoutcast v2: /stats?json=1 (and a common variant)
+        for (const path of ["/stats?json=1", "/statistics?json=1"]) {
+          const sc = await fetchJson(`${origin}${path}`)
+          if (sc && (sc.songtitle || sc.streamtitle))
+            return sc.songtitle || sc.streamtitle
+        }
+
+        return null
+      }
+
+      function startNowPlaying(streamUrl) {
+        clearInterval(npTimer)
+        setNowPlaying("")
+        const poll = async () => {
+          // Don't poll a station that's no longer the active one.
+          if (els.player.src !== streamUrl) {
+            clearInterval(npTimer)
+            return
+          }
+          const title = await fetchTrackTitle(streamUrl)
+          if (els.player.src === streamUrl) setNowPlaying(title)
+        }
+        poll()
+        npTimer = setInterval(poll, 12000)
+      }
+
+      function escapeHtml(str) {
+        return String(str).replace(
+          /[&<>"']/g,
+          (c) =>
+            ({
+              "&": "&amp;",
+              "<": "&lt;",
+              ">": "&gt;",
+              '"': "&quot;",
+              "'": "&#39;",
+            })[c],
+        )
+      }
+
+      async function nextStation() {
+        clearTimeout(autoSkipTimer) // supersede any pending auto-skip
+        els.nextBtn.disabled = true
+        setMessage("Spinning the dial…")
+        const station = await fetchRandomStation()
+        if (station) renderStation(station)
+        else setMessage("No stations found — try again.", true)
+        els.nextBtn.disabled = false
+      }
+
+      // Reflect actual audio state in the UI (spin + play button).
+      // read a vinyl's current rotation (degrees) from its computed matrix.
+      function vinylAngle(el) {
+        const view = el.ownerDocument.defaultView || window
+        const tr = view.getComputedStyle(el).transform
+        if (!tr || tr === "none") return 0
+        const m = tr.match(/matrix\(([^)]+)\)/)
+        if (!m) return 0
+        const [a, b] = m[1].split(",").map(parseFloat)
+        return Math.atan2(b, a) * (180 / Math.PI)
+      }
+
+      // `host` carries the `.playing` class that drives the spin keyframe;
+      // `vinyl` carries the `.stalling` class and the transform. On the main
+      // turntable the host is the wrapper; on the mini player it's the vinyl
+      // itself. Both spin at 360°/5s, so the same constants apply to each.
+      function spinUp(vinyl, host) {
+        // resume the spin from wherever the disc came to rest, instead of
+        // snapping back to 0°. The spin keyframe covers 360° over 5s, so a
+        // negative animation-delay offsets the start by the current angle.
+        const deg = vinylAngle(vinyl)
+        const norm = ((deg % 360) + 360) % 360
+        vinyl.classList.remove("stalling")
+        vinyl.style.transition = ""
+        vinyl.style.transform = ""
+        vinyl.style.animationDelay = `-${(norm / 360) * 5}s`
+        host.classList.add("playing")
+      }
+
+      function stallToStop(vinyl, host) {
+        if (!host.classList.contains("playing")) return
+        const deg = vinylAngle(vinyl)
+        // freeze at the current angle with no transition…
+        vinyl.style.transition = "none"
+        vinyl.style.transform = `rotate(${deg}deg)`
+        host.classList.remove("playing")
+        vinyl.classList.add("stalling")
+        // …then ease out to a resting angle. The spin runs at 360°/5s = 72°/s;
+        // with an ease-out-quad curve over 0.5s the coast must be ~18°
+        // (v0 · t / 2) so the disc keeps the spin's speed at the moment of
+        // pause and decelerates smoothly, instead of lurching faster first.
+        void vinyl.offsetWidth // force reflow so the next change transitions
+        vinyl.style.transition = ""
+        vinyl.style.transform = `rotate(${deg + 18}deg)`
+      }
+
+      // Show "loading…" while the player is trying to play but no audio is
+      // coming through yet (buffering / still connecting to the stream).
+      function setLoading(on) {
+        els.loading.textContent = on ? "connecting" : ""
+      }
+
+      els.player.addEventListener("playing", () => {
+        switchingStation = false
+        setLoading(false) // real audio is flowing now
+        clearTimeout(autoSkipTimer) // a stream is playing — cancel any auto-skip
+        // Only spin up from rest if the disc is currently stopped. If it's
+        // already spinning (e.g. switching stations), leave it untouched so it
+        // keeps rotating from its current position instead of repositioning.
+        if (!els.turntable.classList.contains("playing"))
+          spinUp(els.vinyl, els.turntable)
+        els.playBtn.textContent = "⏸"
+        syncMiniPlayer()
+      })
+      els.player.addEventListener("pause", () => {
+        // Ignore the spurious pause fired while swapping the audio source for a
+        // new station — keep the record spinning through the switch.
+        if (switchingStation) {
+          switchingStation = false
+          return
+        }
+        stallToStop(els.vinyl, els.turntable)
+        els.playBtn.textContent = "▶"
+        setLoading(false)
+        syncMiniPlayer()
+      })
+      // Buffering / connecting: surface "loading…" while we're trying to play.
+      els.player.addEventListener("waiting", () => {
+        if (!els.player.paused) setLoading(true)
+      })
+      els.player.addEventListener("error", () => {
+        switchingStation = false
+        setLoading(false)
+        setMessage("That stream wouldn't play. Finding another…", true)
+        stallToStop(els.vinyl, els.turntable)
+        // Auto-skip to another random station shortly. Clear any pending skip
+        // first so repeated errors don't stack up multiple timers.
+        clearTimeout(autoSkipTimer)
+        autoSkipTimer = setTimeout(nextStation, 2000)
+      })
+
+      function togglePlay() {
+        if (els.player.paused) {
+          setLoading(true)
+          els.player.play().catch(() => {})
+        } else {
+          els.player.pause()
+        }
+      }
+      els.playBtn.addEventListener("click", togglePlay)
+      els.vinylArt.addEventListener("click", togglePlay)
+      els.nextBtn.addEventListener("click", nextStation)
+      els.favBtn.addEventListener("click", () => {
+        if (currentStation) toggleFavorite(currentStation)
+      })
+
+      // ---------- Volume + mute ----------
+      const VOLUME_ICON =
+        '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
+        '<path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>'
+      const MUTED_ICON =
+        '<polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>' +
+        '<line x1="22" y1="9" x2="16" y2="15"></line>' +
+        '<line x1="16" y1="9" x2="22" y2="15"></line>'
+
+      // Update one speaker button + slider pair to match the audio state.
+      function applyVolumeUI(btn, slider) {
+        if (!btn || !slider) return
+        const off = els.player.muted || els.player.volume === 0
+        btn.querySelector("svg").innerHTML = off ? MUTED_ICON : VOLUME_ICON
+        // Reflect mute in the slider: drop to 0 when muted, restore the
+        // underlying volume when unmuted.
+        const level = els.player.muted ? 0 : els.player.volume
+        slider.value = level
+        slider.style.setProperty("--fill", level * 100 + "%")
+      }
+
+      // Sync the main page and (if open) the mini player volume controls.
+      function syncVolumeUI() {
+        applyVolumeUI(els.volumeBtn, els.volume)
+        if (pipWindow) {
+          const doc = pipWindow.document
+          applyVolumeUI(
+            doc.getElementById("miniVolumeBtn"),
+            doc.getElementById("miniVolume"),
+          )
+        }
+      }
+
+      // Drive the audio element from the slider (dragging up also unmutes).
+      els.player.volume = parseFloat(els.volume.value)
+      els.volume.addEventListener("input", () => {
+        els.player.volume = parseFloat(els.volume.value)
+        if (els.player.volume > 0) els.player.muted = false
+      })
+      // Speaker button behaviour:
+      //  - short tap/click toggles mute (and blurs so :focus-within doesn't
+      //    keep the popup pinned open on desktop after the pointer leaves)
+      //  - long press reveals the slider on touch devices, which have no
+      //    hover to trigger the popup otherwise. It stays open until you tap
+      //    elsewhere.
+      const volumeControl = els.volumeBtn.closest(".volume-control")
+      let pressTimer = null
+      let longPressed = false
+      const cancelPress = () => clearTimeout(pressTimer)
+      els.volumeBtn.addEventListener("pointerdown", () => {
+        longPressed = false
+        pressTimer = setTimeout(() => {
+          longPressed = true
+          volumeControl.classList.add("open")
+        }, 400)
+      })
+      els.volumeBtn.addEventListener("pointerup", cancelPress)
+      els.volumeBtn.addEventListener("pointerleave", cancelPress)
+      els.volumeBtn.addEventListener("pointercancel", cancelPress)
+      els.volumeBtn.addEventListener("click", () => {
+        // Swallow the click that trails a long press so the reveal doesn't
+        // also mute.
+        if (longPressed) {
+          longPressed = false
+          return
+        }
+        els.player.muted = !els.player.muted
+        els.volumeBtn.blur()
+      })
+      // Tapping outside the control dismisses the revealed slider.
+      document.addEventListener("pointerdown", (e) => {
+        if (
+          volumeControl.classList.contains("open") &&
+          !volumeControl.contains(e.target)
+        ) {
+          volumeControl.classList.remove("open")
+        }
+      })
+      // Keep the icons in sync with whatever changed the volume/mute state.
+      els.player.addEventListener("volumechange", syncVolumeUI)
+      syncVolumeUI()
+
+      // ---------- Search ----------
+      const searchEls = {
+        input: document.getElementById("searchInput"),
+        results: document.getElementById("results"),
+      }
+
+      let searchTimer = null
+      let searchSeq = 0 // guards against out-of-order responses
+
+      async function searchStations(term) {
+        const params = new URLSearchParams({
+          name: term, // substring match on station name
+          limit: "12",
+          hidebroken: "true",
+          is_https: "true", // only stations playable on an https page
+          order: "clickcount", // most-listened first ≈ most relevant
+          reverse: "true",
+        })
+        for (const base of SERVERS) {
+          try {
+            const res = await fetch(`${base}/json/stations/search?${params}`)
+            if (!res.ok) continue
+            return await res.json()
+          } catch (_) {
+            /* try next mirror */
+          }
+        }
+        return null
+      }
+
+      function renderResults(stations) {
+        if (stations === null) {
+          searchEls.results.innerHTML = `<div class="r-status">Search failed — try again.</div>`
+          return
+        }
+        const usable = stations.filter(
+          (s) => s.url_resolved && s.url_resolved.startsWith("https"),
+        )
+        if (!usable.length) {
+          searchEls.results.innerHTML = `<div class="r-status">No playable stations found.</div>`
+          return
+        }
+        searchEls.results.innerHTML = usable
+          .map((s, i) => {
+            const sub = [s.country, s.bitrate ? s.bitrate + " kbps" : null]
+              .filter(Boolean)
+              .join(" · ")
+            const art = s.favicon
+              ? `<img src="${escapeHtml(s.favicon)}" onerror="this.remove()">`
+              : `<span class="ph"></span>`
+            return `<div class="result" data-i="${i}">
+        ${art}
+        <div class="r-text">
+          <div class="r-name">${escapeHtml(s.name || "Unknown")}</div>
+          <div class="r-sub">${escapeHtml(sub)}</div>
+        </div>
+      </div>`
+          })
+          .join("")
+
+        searchEls.results.querySelectorAll(".result").forEach((el) => {
+          el.addEventListener("click", () => {
+            const s = usable[+el.dataset.i]
+            renderStation(s, { play: true }) // picking a result starts it
+            searchEls.input.value = "" // clear the search bar after selection
+            searchEls.results.innerHTML = ""
+          })
+        })
+      }
+
+      searchEls.input.addEventListener("input", () => {
+        const term = searchEls.input.value.trim()
+        clearTimeout(searchTimer)
+        if (term.length < 2) {
+          searchEls.results.innerHTML = ""
+          return
+        }
+        const seq = ++searchSeq
+        searchEls.results.innerHTML = `<div class="r-status">Searching…</div>`
+        searchTimer = setTimeout(async () => {
+          const stations = await searchStations(term)
+          if (seq !== searchSeq) return // a newer keystroke superseded this query
+          renderResults(stations)
+        }, 300)
+      })
+
+      // Close the results dropdown when clicking outside the search box.
+      document.addEventListener("click", (e) => {
+        if (!e.target.closest(".search")) searchEls.results.innerHTML = ""
+      })
+
+      // Show any history saved from previous sessions.
+      renderHistory()
+      // Upgrade old entries to the full format in the background.
+      backfillHistory()
+      backfillFavorites()
+
+      // If the URL fragment names a station (a shared link), load that one;
+      // otherwise load a random station so there's something ready.
+      async function loadSharedStation(uuid) {
+        setMessage("Loading shared station…")
+        const s = await fetchStationByUuid(uuid)
+        if (s) renderStation(s, { play: true })
+        else nextStation() // fall back if the id can't be resolved
+      }
+
+      const sharedId = new URLSearchParams(location.search).get("station") || ""
+      if (isUuid(sharedId)) loadSharedStation(sharedId)
+      else nextStation()
+    </script>
+  </body>
+</html>
